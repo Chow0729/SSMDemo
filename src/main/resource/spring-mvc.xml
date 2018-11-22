@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/mvc
+	http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+	http://www.springframework.org/schema/aop 
+ 	http://www.springframework.org/schema/aop/spring-aop-4.0.xsd">
+
+	<!-- 注解扫描controller -->
+	<context:component-scan base-package="com.tempetek.starSchool.**.controller,com.tempetek.aop.**"/>
+
+    <context:property-placeholder ignore-unresolvable="true" location="classpath:dictionary.properties,classpath:code.properties" />
+
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+
+	<!-- 开启注解 -->
+	<mvc:annotation-driven />
+	
+	<mvc:resources mapping="/page/*.json" location="/page/" />
+	 <mvc:resources mapping="/js/**" location="/js/"/>  
+	<!-- 根据访问地址渲染后缀名 -->
+	<bean id="contentNegotiationManager"
+		class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+		<property name="favorPathExtension" value="false" />
+		<property name="favorParameter" value="false" />
+		<property name="ignoreAcceptHeader" value="false" />
+		<property name="mediaTypes">
+			<value>
+				atom=application/atom+xml
+				html=text/html
+			<!-- 	json=application/json -->
+				*=*/*
+			</value>
+		</property>
+	</bean>
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="messageConverters">
+			<list>
+				<ref bean="jacksonMessageConverter"/>
+			</list>
+		</property>
+	</bean>
+	<bean id = "jacksonMessageConverter" class = "org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" >    
+         <property name = "supportedMediaTypes">
+             <list >
+                 <value >text/html;charset=UTF-8</value>
+                 <value >application/json;charset=UTF-8</value>
+             </list >
+         </property >
+    </bean>
+    
+     <!-- 定义文件上传解析器 -->
+    <bean id="multipartResolver"
+       class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+       <!-- 设置默认编码 -->
+       <property name="defaultEncoding" value="UTF-8"></property>
+       <!-- 设置文件上传最大值5MB，5*1024*1024 -->
+       <property name="maxUploadSize" value="5242880"></property>
+    </bean> 
+    
+     <mvc:interceptors>
+        <!-- 多个拦截器，顺序执行 -->
+        <mvc:interceptor>
+            <mvc:mapping path="/**" />
+            <bean class="com.tempetek.starSchool.miniProgram.interceptor.MiniProgramInterfaceInterceptor"></bean>
+        </mvc:interceptor>
+    </mvc:interceptors>
+    
+    <!-- 默认首页 -->
+    <mvc:view-controller path="/" view-name="redirect:/login.jsp" />
+
+	<!-- 定义跳转的文件的前后缀 ，视图模式配置 -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!-- 这里的配置我的理解是自动给后面action的方法return的字符串加上前缀和后缀，变成一个 可用的url地址 -->
+		<property name="prefix" value="/WEB-INF/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+	    
+	<!--定义异常处理页面-->
+    <bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="exceptionMappings">
+            <props>
+                <prop key="java.sql.SQLException">exception.jsp</prop>
+                <prop key="java.io.IOException">exception.jsp</prop>
+            </props>
+        </property>
+    </bean>
+</beans>
